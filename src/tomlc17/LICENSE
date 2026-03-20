@@ -1,20 +1,17 @@
-Orbit Systems License
+MIT License
 
-Copyright (c) 2026 Orbit Systems
+Copyright (c) 2024-2026, CK Tan
+https://github.com/cktan/tomlc17
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, and distribute copies of the Software,
-and to permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-1) The above copyright notice and this permission notice shall be included in
-all copies, modifications, and substantial portions of the Software.
-2) No copy, modification, or substantial portion of the Software may be sold
-or otherwise commercially distributed.
-3) No copy, modification, or substantial portion of the Software may be used
-for any military or anti-humanitarian purpose.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

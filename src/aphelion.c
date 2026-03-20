@@ -21,7 +21,7 @@ const char* const op_name[256] = {
 
     [OP_ADDI] = "addi",
     [OP_SUBI] = "subi",
-    [OP_MULI] = "muli",
+    [OP_MULI]  = "muli",
     [OP_UDIVI] = "udivi",
     [OP_IDIVI] = "idivi",
     [OP_UREMI] = "uremi",
@@ -94,8 +94,15 @@ const char* const op_name[256] = {
     [OP_SCB] = "scb",
 };
 
-const char* const gpr_name[32] = {
+const char* const gpr_name[GPR__COUNT] = {
     #define GPR(variant, name) [GPR_##variant] = name,
         APHEL_GPRS
     #undef GPR
+};
+
+
+const char* const ctrl_name[CTRL__COUNT] = {
+    #define CTRL(variant, name) [CTRL_##variant] = name,
+        APHEL_CTRLS
+    #undef CTRL
 };

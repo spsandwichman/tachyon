@@ -46,6 +46,7 @@ typedef enum AphelGpr : u8 {
     CTRL(UPTP, "uptp") \
     CTRL(STAT, "stat") \
     CTRL(INTSTAT, "intstat") \
+    CTRL(ID, "id") \
 
 /// Aphelion control register.
 typedef enum AphelCtrl : u8 {
@@ -55,6 +56,21 @@ typedef enum AphelCtrl : u8 {
 
     CTRL__COUNT,
 } AphelCtrl;
+
+#define APHEL_ICAUSES \
+    ICAUSE(EXTERNL) ICAUSE(BREAKPT) ICAUSE(SYSCALL) ICAUSE(INVALID) \
+    ICAUSE(BUSR) ICAUSE(BUSW) ICAUSE(BUSX) \
+    ICAUSE(ACCESSR) ICAUSE(ACCESSW) ICAUSE(ACCESSX) \
+    ICAUSE(UALIGNR) ICAUSE(UALIGNW) ICAUSE(UALIGNX) \
+    ICAUSE(VATFAIL)
+
+typedef enum : u8 {
+     #define ICAUSE(variant) ICAUSE_##variant,
+        APHEL_ICAUSES
+    #undef ICAUSE
+
+    ICAUSE__COUNT = 16,
+} AphelIntCause;
 
 /// Aphelion instruction format.
 typedef enum : u8 {
@@ -72,8 +88,8 @@ typedef enum : u8 {
     OP_FENCE  = OP(100, 000, A),
     OP_CINVAL = OP(100, 001, A),
     OP_CFETCH = OP(100, 010, A),
-    OP_JLR    = OP(100, 100, A),
-    OP_JL     = OP(100, 101, A),
+    OP_JLR    = OP(100, 100, B),
+    OP_JL     = OP(100, 101, B),
     OP_BZ     = OP(100, 110, A),
     OP_BN     = OP(100, 111, A),
 
@@ -178,6 +194,9 @@ typedef struct {
 extern const char* const op_name[256];
 
 /// Name for a GPR.
-extern const char* const gpr_name[32];
+extern const char* const gpr_name[GPR__COUNT];
+
+/// Name for a control register.
+extern const char* const ctrl_name[CTRL__COUNT];
 
 #endif // APHELION_H

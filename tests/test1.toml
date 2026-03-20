@@ -1,0 +1,20 @@
+[system]
+ram = ["1 MiB"]
+image = "test1.bin"
+
+[[system.lps]]
+gpr = {
+    a1 = 5,
+    a2 = 5,
+}
+
+[compiler]
+opt = [
+    # division by zero assumed impossible
+    "no-div-zero"
+
+    # implicit interrupts (not `syscall` or `breakpt`),
+    # if returned from, do not observably change the machine state
+    "transparent-implicit-interrupts"
+
+]

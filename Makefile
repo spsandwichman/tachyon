@@ -3,19 +3,19 @@ BUILD_DIR = build
 # libcommon config
 export COMMON_OUT_DIR=../$(BUILD_DIR)
 
-METEOR_SRC_PATHS = \
+TACHYON_SRC_PATHS = \
 	src/*.c \
-	src/microui/*.c \
+	src/tomlc17/*.c
 
-METEOR_SRC = $(wildcard $(METEOR_SRC_PATHS))
-METEOR_OBJECTS = $(METEOR_SRC:src/%.c=build/%.o)
+TACHYON_SRC = $(wildcard $(TACHYON_SRC_PATHS))
+TACHYON_OBJECTS = $(TACHYON_SRC:src/%.c=build/%.o)
 
 CC ?= gcc
 LD = $(CC)
 
 INCLUDEPATHS = -Iinclude/ -Icommon/include/
 ASANFLAGS = -fsanitize=undefined -fsanitize=address
-CFLAGS = -std=gnu2x -fwrapv -fno-strict-aliasing
+CFLAGS = -std=c23 -fwrapv -fno-strict-aliasing
 WARNINGS = \
 	-Wall -Wimplicit-fallthrough -Wmaybe-uninitialized \
 	-Wno-enum-compare -Wno-unused -Wno-enum-conversion -Wno-discarded-qualifiers
@@ -37,7 +37,7 @@ endif
 -include config.mk
 
 .PHONY: all
-all: meteor
+all: tachyon
 
 bin/libcommon.a:
 	$(MAKE) -C common
@@ -47,10 +47,10 @@ build/%.o: src/%.c
 	$(shell echo 1>&2 -e "Compiling $<")
 	@$(CC) -c -o $@ $< -MD $(INCLUDEPATHS) $(ALLFLAGS) $(OPT)
 
-.PHONY: meteor
-meteor: bin/meteor
-bin/meteor:  $(METEOR_OBJECTS) bin/libcommon.a
-	@$(LD) $(LDFLAGS) $(METEOR_OBJECTS) -o bin/meteor -lm -lc -Lbin -lcommon -lSDL3 -lSDL3_ttf
+.PHONY: tachyon
+tachyon: bin/tachyon
+bin/tachyon:  $(TACHYON_OBJECTS) bin/libcommon.a
+	@$(LD) $(LDFLAGS) $(TACHYON_OBJECTS) -o bin/tachyon -lm -lc -Lbin -lcommon -lSDL3
 
 .PHONY: clean
 clean:
@@ -58,7 +58,7 @@ clean:
 	@rm -rf bin/
 	@mkdir $(BUILD_DIR)/
 	@mkdir bin/
-	@mkdir -p $(dir $(METEOR_OBJECTS))
+	@mkdir -p $(dir $(TACHYON_OBJECTS))
 
 # generate compile commands with bear if u got it!!!
 # very good highly recommended ʕ·ᴥ·ʔ
@@ -66,4 +66,4 @@ clean:
 bear-gen-cc: clean
 	bear -- $(MAKE) all
 
--include $(METEOR_OBJECTS:.o=.d)
+-include $(TACHYON_OBJECTS:.o=.d)
