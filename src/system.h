@@ -154,7 +154,7 @@ struct System {
     SystemFlags flags;
 };
 
-System* system_init(u16 num_lps, u16 num_ram_slots, u32* ram_slot_sizes);
+System* system_init(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes);
 
 // Trigger an interrupt and longjmp back to the main execution loop.
 NORETURN void lp_trigger_interrupt(Lp* lp, u8 cause);

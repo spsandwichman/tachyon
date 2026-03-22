@@ -80,8 +80,6 @@ typedef enum : u8 {
     UOP_IDIV,
     UOP_IDIV_UNCHECKED,
 
-    UOP_ADD_I32,
-
     UOP_BZ,
     UOP_BN,
 
@@ -92,7 +90,7 @@ typedef enum : u8 {
     /// If pending, trigger that interrupt and diverge.
     UOP_CHECK_PENDING,
     
-    /// Exit with
+    /// Exit with an exit code. It does not end the block.
     UOP_EXIT_MAY_RETURN,
 
     UOP_EXIT,
@@ -100,7 +98,10 @@ typedef enum : u8 {
 
 typedef enum {
     
+    // execute the next block
     BLOCK_EXIT_NEXT = 1,
+
+    // exit the test.
     BLOCK_EXIT_TEST_QUIT,
 
     BLOCK_EXIT_INTERRUPT_START,
@@ -108,17 +109,11 @@ typedef enum {
 
 } BlockExitCode;
 
-/// The maximum amount of hregs the compiler may use to store sregs.
-#define HREG_ALLOC_SET_LEN 6
-#define HREG_NONE HREG_ALLOC_SET_LEN
-static_assert(HREG_ALLOC_SET_LEN >= 4);
-
 #define UOP_INDEX_NULL 0
 typedef u16 UOpIndex;
 
 typedef struct UOp {
     UOpKind kind;
-    u8 hreg;
     u16 extra;
     UOpIndex src1;
     UOpIndex src2;
@@ -129,6 +124,6 @@ typedef struct UOpBlock {
 
 } UOpBlock;
 
-UOpBlock* compile_block(Lp* lp, EncodedInst* binary);
+UOpBlock* compile_block(System* sys, Lp* lp, EncodedInst* binary);
 
 #endif // COMPILER_H

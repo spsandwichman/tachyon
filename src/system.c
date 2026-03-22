@@ -4,7 +4,7 @@
 #include "common/util.h"
 
 /// Initialize the emulated system.
-System* system_init(u16 num_lps, u16 num_ram_slots, u32* ram_slot_sizes) {
+System* system_init(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes) {
     System* sys = malloc(sizeof(*sys));
 
     sys->lps_len = num_lps;

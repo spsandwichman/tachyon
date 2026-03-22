@@ -1,20 +1,16 @@
-[system]
-ram = ["1 MiB"]
-image = "test1.bin"
+[init]
+ram = ["1 MiB", "1 MiB"]
+image = "tests/test1.bin"
 
-[[system.lps]]
+[[init.lps]]
 gpr = {
     a1 = 5,
-    a2 = 5,
+    a2 = 2,
 }
 
-[compiler]
-opt = [
-    # division by zero assumed impossible
-    "no-div-zero"
-
-    # implicit interrupts (not `syscall` or `breakpt`),
-    # if returned from, do not observably change the machine state
-    "transparent-implicit-interrupts"
-
-]
+[[expect.lps]]
+gpr = {
+    a0 = 3,
+    a1 = 5,
+    a2 = 2,
+}
