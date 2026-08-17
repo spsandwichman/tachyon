@@ -1,16 +1,33 @@
 [init]
-ram = ["1 MiB", "1 MiB"]
-image = "tests/test1.bin"
+mode = "sandbox"
+ram = [
+  {
+    size = "1 MiB",
+    asm = """
+      add a0, a1, a2
+      sub a0, a1, a2
+      wait
+    """
+  }
+]
+lps = [
+  {
+    gpr = {
+      ip = 0x4000000000000000,
+      a1 = 5,
+      a2 = 2,
+    }
+  }
+]
 
-[[init.lps]]
-gpr = {
-    a1 = 5,
-    a2 = 2,
-}
-
-[[expect.lps]]
-gpr = {
-    a0 = 3,
-    a1 = 5,
-    a2 = 2,
-}
+[expect]
+lps = [
+  {
+    gpr = {
+      ip = 0x400000000000000c,
+      a0 = 3,
+      a1 = 5,
+      a2 = 2,
+    }
+  }
+]

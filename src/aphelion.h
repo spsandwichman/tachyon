@@ -42,20 +42,26 @@ typedef enum AphelGpr : u8 {
     CTRL(INTVAL, "intval") \
     CTRL(INTPTE, "intpte") \
     CTRL(INTCAUSE, "intcause") \
-    CTRL(KPTP, "kptp") \
-    CTRL(UPTP, "uptp") \
+    CTRL(LPTP, "lptp") \
+    CTRL(HPTP, "hptp") \
     CTRL(STAT, "stat") \
     CTRL(INTSTAT, "intstat") \
-    CTRL(ID, "id") \
+    CTRL(ASID, "asid") \
+    CTRL(LPID, "lpid") \
 
 /// Aphelion control register.
-typedef enum AphelCtrl : u8 {
+typedef enum : u8 {
      #define CTRL(variant, name) CTRL_##variant,
         APHEL_CTRLS
     #undef CTRL
 
     CTRL__COUNT,
 } AphelCtrl;
+
+typedef enum : u64 {
+    STAT_BIT_E = 1ull << 0,
+    STAT_BIT_U = 1ull << 1,
+} AphelStatBit;
 
 #define APHEL_ICAUSES \
     ICAUSE(EXTERNL) ICAUSE(BREAKPT) ICAUSE(SYSCALL) ICAUSE(INVALID) \
@@ -88,6 +94,7 @@ typedef enum : u8 {
     OP_FENCE  = OP(100, 000, A),
     OP_CINVAL = OP(100, 001, A),
     OP_CFETCH = OP(100, 010, A),
+    OP_TINVAL = OP(100, 100, A),
     OP_JLR    = OP(100, 100, B),
     OP_JL     = OP(100, 101, B),
     OP_BZ     = OP(100, 110, A),
@@ -118,7 +125,7 @@ typedef enum : u8 {
     OP_CSB  = OP(001, 110, B),
 
     OP_SI  = OP(010, 000, B),
-    OP_CB  = OP(010, 001, B),
+    OP_MB  = OP(010, 001, B),
     OP_REV = OP(010, 010, B),
 
     OP_SULTI = OP(011, 001, B),

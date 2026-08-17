@@ -1,0 +1,62 @@
+[init]
+
+# 'sandbox' loads image and start executing at 0, and
+# 'wait' instruction halts machine. 'expect' constraints 
+# are checked after halt.
+sandbox = true
+
+# ram entries follow regex '^\d+ *(B|KiB|MiB|GiB)$'
+ram = ["1 MiB", "1 MiB"]
+image = "tests/test1.bin"
+
+serial-in = "this is input"
+
+# set LP state before exeuction. 
+# the number of [[init.lps]] entries determines the number of LPs 
+# in the system.
+[[init.lp]]
+# all registers are 0 unlesss otherwise specified
+gpr = {
+    a1 = 5,
+    a2 = 2,
+}
+ctrl = {
+    int0 = 0,
+}
+
+
+# If you don't have any specific states to set up before execution, 
+# you may instead write:
+#   lp = <number of LPs>
+
+# add as many [[expect.lp]] entries for each LP you want to check on
+[[expect.lp]]
+gpr = {
+    a0 = 3,
+    a1 = 5,
+    a2 = 2,
+}
+ctrl = {
+    int0 = 0,
+}
+
+# Anything tachyon-specific.
+[tachyon]
+# Unsafe optimizations.
+unsafe-opt = [
+    # Remove division by zero checks.
+    "no-div-zero",
+
+    # Assume that T(vaddr + const) = T(vaddr) + const.
+    # This allows the compiler to do much less virtual address translation.
+    "trivial-vaddr-offset-const",
+
+    # Assume that T(vaddr + anything) = T(vaddr) + anything.
+    # Same idea as above, but taken to the extreme.
+    "trivial-vaddr-offset-any",
+
+    # Assume SC instructions never fail, good for performance on single-core demos
+    "no-lock-invalidation",
+]
+
+

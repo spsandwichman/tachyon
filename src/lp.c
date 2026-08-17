@@ -1,14 +1,14 @@
+#include "common/portability.h"
 #include "common/util.h"
 #include "aphelion.h"
 #include "system.h"
-#include "compiler.h"
 
+#include <assert.h>
 #include <setjmp.h>
 
-NORETURN
-void lp_trigger_interrupt(Lp *lp, u8 cause) {
+noreturn void lp_trigger_interrupt(Lp *lp, u8 cause) {
 
-    DEBUG("interrupt on LP %lu with code %u\n", lp->ctrl[CTRL_ID], cause);
+    DEBUG("interrupt on LP %lu with code %u\n", lp->ctrl[CTRL_LPID], cause);
 
     assert(cause < ICAUSE__COUNT);
 
@@ -30,95 +30,226 @@ void lp_trigger_interrupt(Lp *lp, u8 cause) {
 
     longjmp(
         lp->interrupt_state.interrupt_handler, 
-        BLOCK_EXIT_INTERRUPT_START + cause
+        EXIT_INTERRUPT_START + cause
     );
 }
 
 void lp_dump_info(Lp* lp) {
-    printf("dump LP %lu (%p)\n", lp->ctrl[CTRL_ID], lp);
-
+    DEBUG("");
     for_n(i, 0, GPR__COUNT) {
-        printf("  %3s = %016lx", gpr_name[i], lp->gpr[i]);
+        DEBUG_NOI("  %3s = %016lx", gpr_name[i], lp->gpr[i]);
 
         if (i % 4 == 3) {
-            printf("\n");
+            DEBUG_NOI("\n");
+            DEBUG("");
         }
     }
-    printf("\n");
+    DEBUG("\n");
     
+    DEBUG("");
     for_n(i, 0, CTRL__COUNT) {
-        printf(" %8s = %016lx", ctrl_name[i], lp->ctrl[i]);
+        DEBUG_NOI(" %8s = %016lx", ctrl_name[i], lp->ctrl[i]);
 
         if (i % 4 == 3) {
-            printf("\n");
+            DEBUG_NOI("\n");
+            DEBUG("");
         }
     }
-    printf("\n");
+    DEBUG("\n");
 
-    printf(" locked %d addr %016lx width %d\n", 
+    DEBUG("locked %d addr %016lx width %d\n", 
         lp->llsc_lock.locked, 
         lp->llsc_lock.addr,
         1 << lp->llsc_lock.width
     );
+
+    DEBUG("compiler\n");
+    DEBUG_INDENT;
+    DEBUG("live blocks %8u / %-8u (%.2f %%)\n", 
+        lp->compiler.manager.num_blocks_allocd,
+        BLOCK_HASHMAP_CAPACITY,
+        (float)lp->compiler.manager.num_blocks_allocd/BLOCK_HASHMAP_CAPACITY
+    );
+
+    u32 actually_used = lp->compiler.manager.exec_region_used - lp->compiler.manager.exec_region_freed;
+    DEBUG("exec used   %8u / %-8u (%.2f %%)\n", 
+        actually_used,
+        lp->compiler.manager.exec_region_size,
+        (float)actually_used/lp->compiler.manager.exec_region_size
+    );
+    DEBUG("exec wasted %8u / %-8u (%.2f %%)\n", 
+        lp->compiler.manager.exec_region_freed,
+        lp->compiler.manager.exec_region_size,
+        (float)lp->compiler.manager.exec_region_freed/lp->compiler.manager.exec_region_size
+    );
+    DEBUG_DEDENT;
 }
 
-/// Perform a translation cache lookup.
+/// Perform a TLB lookup.
 /// \return True if lookup succeedeed, false otherwise.
-bool tc_lookup(LpTc* tc, u64 addr_in, PteEntry* addr_out, u16 ptp_hash, bool user) {
+bool tlb_lookup(Lp* lp, u64 addr_in, PteEntry* addr_out) {
+
+    LpTlb* tlb = &lp->tlb;
     
     u64 page_indices = ((addr_in << 16) >> 28);
 
-    for_n(i, 0, TC_SIZE) {
-        TcEntry ent = tc->entries[i];
+    for_n(i, 0, TLB_SIZE) {
+        TlbEntry ent = tlb->entries[i];
+        if (!ent.global && ent.asid == lp->ctrl[CTRL_ASID]) {
 
-        if (ent.virt_page_indices != page_indices) {
-            continue;
         }
-
-        if (ent.user != user) {
-            continue;
-        }
-
-        if (ent.ptp_hash != ptp_hash) {
-            continue;
-        }
-
-        // translation cache entry hit
-        *addr_out = ent.entry;
-        return true;
     }
 
     return false;
 }
 
+
+#define GETBITS(x, low, high) \
+    (((u64)x >> low) & ((1ull << (high-low + 1)) - 1))
+
 /// Returns to a corresponding `setjmp` on translation failure.
-u64 lp_translate_addr(Lp* lp, u64 vaddr, AccessKind kind) {
-    
-    PteEntry pte;
+u64 lp_translate_addr(Lp* lp, u64 va, AccessKind kind) {
+    u64 vr = va >> 62;
+    ASSUME(vr < 4);
 
-    bool user_mode = (lp->ctrl[CTRL_STAT] & (1 << 1)) != 0;
-
-    u64 ptp = lp->ctrl[user_mode ? CTRL_UPTP : CTRL_KPTP];
-    u16 ptp_hash = ptp ^ (ptp >> 16) ^ (ptp >> 32) ^ (ptp >> 48);
-
-    // perform a TC lookup
-    if (tc_lookup(&lp->tc, vaddr, &pte, ptp_hash, user_mode)) {
-        if (!pte.v) {
+    u64 l3pt;
+    switch (vr) {
+    case 0: // low paged region
+        if (GETBITS(va, 47, 61) != 0) {
             lp_trigger_interrupt(lp, ICAUSE_ACCESSR + kind);
         }
-
-        if (!pte.w && kind == ACCESS_W) {
-            lp_trigger_interrupt(lp, ICAUSE_ACCESSW);
+        l3pt = lp->ctrl[CTRL_LPTP];
+        break;
+    case 1:
+    case 2: // direct regions 
+        if (lp->ctrl[CTRL_STAT] & STAT_BIT_U) {
+            lp_trigger_interrupt(lp, ICAUSE_ACCESSR + kind);
         }
-
-        if (!pte.x && kind == ACCESS_X) {
-            lp_trigger_interrupt(lp, ICAUSE_ACCESSX);
+        return (va << 2) >> 2;
+    case 3: // high paged region
+        if (((i64)va >> 47) != -1) {
+            lp_trigger_interrupt(lp, ICAUSE_ACCESSR + kind);
         }
-        
-        u64 paddr = (pte.next << 12) | (vaddr & ((1 << 12) - 1));
-        return paddr;
+        l3pt = lp->ctrl[CTRL_HPTP];
+        break;
     }
 
-    // perform a page table walk
-    TODO("perform page table walk");
+    TODO("guh");
 }
+
+/// Get the host address associated with a physical address inside a RAM region.
+/// Assumes paddr is valid.
+u8* lp_physical_get_haddr(Lp* lp, u64 paddr) {
+    System* sys = lp->sys;
+    u16 ram_slot_index = (paddr >> RAM_SLOT_MAX_SIZE_BITS) & (MAX_RAM_SLOTS - 1);
+    u64 addr_inside_slot = paddr & (RAM_SLOT_MAX_SIZE - 1);
+    RamSlot slot = sys->bus.ram_slots[ram_slot_index];
+    return &(slot.raw_memory)[addr_inside_slot];
+}
+
+/// Verify the validity of an access before it is executed.
+/// Returns if the access passed safety checks, diverges and 
+/// triggers relevant interrupts if access would definitely fail.
+void lp_check_physical_access(Lp* lp, u64 paddr, AccessWidth width, AccessKind kind) {
+    // check unaligned
+    if ((paddr & ((1 << width) - 1)) != 0) {
+        lp_trigger_interrupt(lp, ICAUSE_UALIGNR + kind);
+    }
+
+    System* sys = lp->sys;
+
+    if (paddr <= BUS_RAM_MAX) {
+        u16 ram_slot_index = (paddr >> RAM_SLOT_MAX_SIZE_BITS) & (MAX_RAM_SLOTS - 1);
+        if (ram_slot_index >= sys->bus.ram_slots_len) {
+            lp_trigger_interrupt(lp, ICAUSE_BUSR + kind);
+        }
+
+        RamSlot slot = sys->bus.ram_slots[ram_slot_index];
+
+        u64 addr_inside_slot = paddr & (RAM_SLOT_MAX_SIZE - 1);
+
+        if (addr_inside_slot >= slot.size_in_pages * APHEL_PAGE_SIZE) {
+            lp_trigger_interrupt(lp, ICAUSE_BUSR + kind);
+        }
+
+        // verified!
+        return;
+    } else {
+        // this is outside of RAM, so we can't check its validity in advance.
+        // its safety must be checked when the access is actually executed.
+
+        // TODO when the layout of the SRR is solidified,
+        // we can move some checking into this function.
+        return;
+    }
+}
+
+/// Perform a bus write, performing as little safety checks as possible.
+/// Assumes `bus_verify` has executed successfully beforehand.
+void lp_physical_write(Lp* lp, u64 paddr, AccessWidth width, void* data) {
+    System* sys = lp->sys;
+
+    if_likely (paddr <= BUS_RAM_MAX) {
+        // writes to RAM are like. infinitely more likely than writes 
+        // to any other part of the address space.
+
+        u16 ram_slot_index = (paddr >> RAM_SLOT_MAX_SIZE_BITS) & (MAX_RAM_SLOTS - 1);
+        u64 addr_inside_slot = paddr & (RAM_SLOT_MAX_SIZE - 1);
+
+        RamSlot slot = sys->bus.ram_slots[ram_slot_index];
+        void* haddr = &(slot.raw_memory)[addr_inside_slot];
+        
+        // hopefully this can optimize the memcpy a little bit
+        ASSUME(width <= WIDTH_MAX);
+
+        memcpy(haddr, data, 1 << width);
+    } else {
+        TODO("non-ram write");
+    }
+
+    // invalidate lock states
+    for_n(i, 0, sys->lps_len) {
+        Lp* other_lp = &sys->lps[i];
+        if (!other_lp->llsc_lock.locked) {
+            continue;
+        }
+
+        // check rough lock range overlap
+        const u64 width_mask = ~((1ull << WIDTH_MAX) - 1);
+        if ((other_lp->llsc_lock.addr & width_mask) != (paddr & width_mask)) {
+            continue;
+        }
+
+        other_lp->llsc_lock.locked = false;
+    }
+}
+
+u64 lp_physical_read(Lp* lp, u64 paddr, AccessWidth width) {
+    System* sys = lp->sys;
+
+    u64 retval;
+
+    if_likely (paddr <= BUS_RAM_MAX) {
+        u16 ram_slot_index = (paddr >> RAM_SLOT_MAX_SIZE_BITS) & (MAX_RAM_SLOTS - 1);
+        u64 addr_inside_slot = paddr & (RAM_SLOT_MAX_SIZE - 1);
+
+        RamSlot slot = sys->bus.ram_slots[ram_slot_index];
+        void* haddr = &(slot.raw_memory)[addr_inside_slot];
+        
+        // hopefully this can optimize the memcpy a little bit
+        ASSUME(width <= WIDTH_MAX);
+
+        memcpy(&retval, haddr, 1 << width);
+    } else {
+        TODO("non-ram read");
+    }
+
+    return retval;
+}
+
+u64 lp_read(Lp* lp, u64 vaddr, AccessWidth width) {
+    u64 paddr = lp_translate_addr(lp, vaddr, ACCESS_R);
+    lp_check_physical_access(lp, paddr, width, ACCESS_R);
+    return lp_physical_read(lp, paddr, width);
+}
+

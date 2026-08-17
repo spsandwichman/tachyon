@@ -6,6 +6,7 @@ const char* const op_name[256] = {
     [OP_FENCE] = "fence",
     [OP_CINVAL] = "cinval",
     [OP_CFETCH] = "cfetch",
+    [OP_TINVAL] = "tinval",
     [OP_JL] = "jl",
     [OP_JLR] = "jlr",
     [OP_BZ] = "bz",
@@ -36,7 +37,7 @@ const char* const op_name[256] = {
     [OP_CSB] = "csb",
 
     [OP_SI] = "si",
-    [OP_CB] = "cb",
+    [OP_MB] = "mb",
     [OP_REV] = "rev",
 
     [OP_SULTI] = "sulti",
@@ -99,7 +100,6 @@ const char* const gpr_name[GPR__COUNT] = {
         APHEL_GPRS
     #undef GPR
 };
-
 
 const char* const ctrl_name[CTRL__COUNT] = {
     #define CTRL(variant, name) [CTRL_##variant] = name,

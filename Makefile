@@ -5,7 +5,11 @@ export COMMON_OUT_DIR=../$(BUILD_DIR)
 
 TACHYON_SRC_PATHS = \
 	src/*.c \
-	src/tomlc17/*.c
+	src/targets/*.c \
+	src/asm/*.c \
+	src/targets/chasm/*.c \
+	src/tomlc17/*.c \
+	
 
 TACHYON_SRC = $(wildcard $(TACHYON_SRC_PATHS))
 TACHYON_OBJECTS = $(TACHYON_SRC:src/%.c=build/%.o)
