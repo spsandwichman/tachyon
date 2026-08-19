@@ -143,8 +143,15 @@ void x64_translate(Compiler* c) {
             X64_Reg src1 = get_or_allocate_hreg(definition_of, hreg_of, op.src1);
             X64_Reg src2 = get_or_allocate_hreg(definition_of, hreg_of, op.src2);
             break;
+        } 
+        case UOP_MUL: {
+            X64_Reg def = free_hreg(definition_of, hreg_of, op_index);
+            X64_Reg src1 = get_or_allocate_hreg(definition_of, hreg_of, op.src1);
+            X64_Reg src2 = get_or_allocate_hreg(definition_of, hreg_of, op.src2);
+            break;
         }
-        case UOP_ADD_I32: {
+        case UOP_ADD_I32:
+        case UOP_SUB_I32: {
             X64_Reg def = free_hreg(definition_of, hreg_of, op_index);
             X64_Reg src1 = get_or_allocate_hreg(definition_of, hreg_of, op.src1);
             break;
@@ -174,7 +181,7 @@ void x64_translate(Compiler* c) {
             vec_append(&insts, ((x64Ins){ 
                 CALL, {m64(
                     chasm_ref[hreg_of[param_table]], 
-                    offsetof(JitHelperTable, quit_with_code))}})
+                    offsetof(JitHelperTable, exit))}})
             );
             break;
         case UOP_GET_SREG: {
@@ -205,6 +212,21 @@ void x64_translate(Compiler* c) {
             }
             vec_append(&insts, ((x64Ins){
                 ADD, {
+                    chasm_reg[hreg_of[op_index]], 
+                    chasm_reg[hreg_of[op.src2]]}})
+            );
+            break;
+        }
+        case UOP_MUL: {
+            if (hreg_of[op_index] != hreg_of[op.src1]) {
+                vec_append(&insts, ((x64Ins){
+                    MOV, {
+                        chasm_reg[hreg_of[op_index]], 
+                        chasm_reg[hreg_of[op.src1]]}})
+                );
+            }
+            vec_append(&insts, ((x64Ins){
+                IMUL, {
                     chasm_reg[hreg_of[op_index]], 
                     chasm_reg[hreg_of[op.src2]]}})
             );
@@ -248,6 +270,22 @@ void x64_translate(Compiler* c) {
             );
             break;
         }
+        
+        case UOP_SUB_I32: {
+            if (hreg_of[op_index] != hreg_of[op.src1]) {
+                vec_append(&insts, ((x64Ins){
+                    MOV, {
+                        chasm_reg[hreg_of[op_index]], 
+                        chasm_reg[hreg_of[op.src1]]}})
+                );
+            }
+            vec_append(&insts, ((x64Ins){
+                SUB, {
+                    chasm_reg[hreg_of[op_index]], 
+                    imm(op.imm32)}})
+            );
+            break;
+        }
         default:
             TODO("unhandled uop %u", op.kind);
         }
@@ -263,8 +301,8 @@ void x64_translate(Compiler* c) {
     #endif
 
     DEBUG_NOI("\n");
+    u8 buffer[16] = {};
     for_n(i, 0, vec_len(insts)) {
-        u8 buffer[16] = {};
         u32 len = x64emit(&insts[i], buffer);
         if (len == 0) {
             TODO("error: %s\n", x64error(nullptr));

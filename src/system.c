@@ -9,7 +9,7 @@
 #endif
 
 /// Initialize the emulated system.
-System* system_init(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes) {
+System* system_new(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes) {
     System* sys = malloc(sizeof(*sys));
 
     sys->lps_len = num_lps;
@@ -41,6 +41,13 @@ System* system_init(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes) {
     return sys;
 }
 
+// System* system_destroy(System* sys) {
+//     for_n(i, 0, sys->lps_len) {
+//         Lp* lp = &sys->lps[i];
+
+//     }
+// }
+
 void system_dump(System* sys) {
     
     DEBUG("mode: ");
@@ -68,38 +75,15 @@ void system_dump(System* sys) {
         Lp* lp = &sys->lps[i];
         DEBUG("lp %zu: \n", i);
         DEBUG_INDENT;
-        lp_dump_info(lp);
+        lp_dump(lp);
         DEBUG_DEDENT;
     }
 }
-
-static void quit_with_code SYSV_ABI (Lp* lp, const JitHelperTable* table, BlockExitCode code) {
-    longjmp(lp->interrupt_state.interrupt_handler, code);
-}
-
-static const JitHelperTable table = {
-    .quit_with_code = quit_with_code,
-};
-
 
 void system_launch(System* sys) {
     assert(sys->lps_len == 1);
 
     Lp* lp0 = &sys->lps[0];
 
-    // set this LP's return point.
-    int retcode = 0;
-    if ((retcode = _setjmp(lp0->interrupt_state.interrupt_handler))) {
-        printf("exited! with code %u\n", retcode);
-        system_dump(sys);
-        return;
-    }
-
-    u64 paddr = lp_translate_addr(lp0, lp0->gpr[GPR_IP], ACCESS_X);
-    lp_check_physical_access(lp0, paddr, WIDTH_32, ACCESS_X);
-    void* haddr = lp_physical_get_haddr(lp0, paddr);
-
-    CompiledBlock* block = compiler_compile_block(&lp0->compiler, haddr, paddr);
-    
-    block->code(lp0, &table);
+    lp_dispatch(lp0);
 }

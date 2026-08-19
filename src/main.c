@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-char test_config[] = {
-    #embed "../tests/test1.toml"
-};
+// char test_config[] = {
+//     #embed "../tests/arith/add.toml"
+// };
 
 static System* system_from_config(toml_datum_t config) {
     
@@ -74,7 +74,7 @@ static System* system_from_config(toml_datum_t config) {
         }
     }
 
-    System* sys = system_init(num_lps, vec_len(ram_slots), ram_slots);
+    System* sys = system_new(num_lps, vec_len(ram_slots), ram_slots);
 
     for_n(i, 0, ram_array.u.arr.size) {
         auto ram_item = ram_array.u.arr.elem[i];
@@ -195,11 +195,15 @@ static void check_expect(System* sys, toml_datum_t config) {
     }
 }
 
-int main() {
-    string config_string = string_wrap(test_config);
-    toml_result_t config = toml_parse(config_string.raw, config_string.len);
+
+static void print_help() {
+    puts("tachyon test <path/to/test(s)>");
+}
+
+static void run_test_toml(const char* config_path, string config_text) {
+    toml_result_t config = toml_parse(config_text.raw, config_text.len);
     if (!config.ok) {
-        printf("failed to parse test config: %s\n", config.errmsg);
+        printf("failed to parse test config '%s': %s\n", config_path, config.errmsg);
         exit(1);
     }
 
@@ -212,4 +216,67 @@ int main() {
     check_expect(sys, config.toptab);
 
     toml_free(config);
+}
+
+static string string_concat3(string a, string b, string c) {
+    string d = string_alloc(a.len + b.len + c.len);
+    memcpy(&d.raw[0], a.raw, a.len);
+    memcpy(&d.raw[a.len], b.raw, b.len);
+    memcpy(&d.raw[a.len + b.len], c.raw, c.len);
+    return d;
+}
+
+int main(int argc, char** argv) {
+    if (argc == 1) {
+        print_help();
+        exit(0);
+    }
+
+    const char* subcommand = argv[1];
+    
+    if (strcmp(subcommand, "test") == 0) {
+
+        Vec(string) tests = vec_new(string, 128);
+        vec_append(&tests, string_clone(string_wrap(argv[2])));
+
+        // iteratively expand
+        for_n(i, 0, vec_len(tests)) {
+            char* dir = clone_to_cstring(tests[i]);
+            
+            usize begin = vec_len(tests);
+            fs_dir_contents(dir, &tests);
+            usize end = vec_len(tests);
+
+            for_n(j, begin, end) {
+                string local_path = tests[j];
+                tests[j] = string_concat3(tests[i], strlit("/"), local_path);
+                // free(local_path.raw);
+            }
+
+            free(dir);
+        }
+
+        for_n(i, 0, vec_len(tests)) {
+            if (!string_ends_with(tests[i], string_wrap(".toml"))) {
+                continue;
+            }
+            char* test_path = clone_to_cstring(tests[i]);
+
+            FsFile* config_file = fs_open(test_path, false, false);
+            if (config_file == nullptr) {
+                printf("cannot open '%s'\n", test_path);
+                exit(1);
+            }
+
+            string config_text = fs_read_entire(config_file, true);
+
+            run_test_toml(test_path, config_text);
+
+            printf("passed '%s'\n", test_path);
+
+            free(config_text.raw);
+            fs_destroy(config_file);
+            free(test_path);
+        }
+    }
 }

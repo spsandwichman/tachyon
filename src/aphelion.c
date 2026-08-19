@@ -2,6 +2,7 @@
 
 const char* const op_name[256] = {
     [OP_SSI] = "ssi",
+    [OP_AUIR] = "auir",
 
     [OP_FENCE] = "fence",
     [OP_CINVAL] = "cinval",
@@ -22,7 +23,7 @@ const char* const op_name[256] = {
 
     [OP_ADDI] = "addi",
     [OP_SUBI] = "subi",
-    [OP_MULI]  = "muli",
+    [OP_MULI] = "muli",
     [OP_UDIVI] = "udivi",
     [OP_IDIVI] = "idivi",
     [OP_UREMI] = "uremi",
@@ -80,6 +81,10 @@ const char* const op_name[256] = {
     [OP_LH] = "lh",
     [OP_LQ] = "lq",
     [OP_LB] = "lb",
+    [OP_LWI] = "lwi",
+    [OP_LHI] = "lhi",
+    [OP_LQI] = "lqi",
+    [OP_LBI] = "lbi",
     [OP_LLW] = "llw",
     [OP_LLH] = "llh",
     [OP_LLQ] = "llq",
@@ -89,20 +94,26 @@ const char* const op_name[256] = {
     [OP_SH] = "sh",
     [OP_SQ] = "sq",
     [OP_SB] = "sb",
+    [OP_SWI] = "swi",
+    [OP_SHI] = "shi",
+    [OP_SQI] = "sqi",
+    [OP_SBI] = "sbi",
     [OP_SCW] = "scw",
     [OP_SCH] = "sch",
     [OP_SCQ] = "scq",
     [OP_SCB] = "scb",
 };
 
-const char* const gpr_name[GPR__COUNT] = {
+const char* const gpr_name[32] = {
     #define GPR(variant, name) [GPR_##variant] = name,
         APHEL_GPRS
     #undef GPR
 };
 
-const char* const ctrl_name[CTRL__COUNT] = {
+
+const char* const ctrl_name[] = {
     #define CTRL(variant, name) [CTRL_##variant] = name,
         APHEL_CTRLS
     #undef CTRL
 };
+

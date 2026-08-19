@@ -19,7 +19,7 @@ LD = $(CC)
 
 INCLUDEPATHS = -Iinclude/ -Icommon/include/
 ASANFLAGS = -fsanitize=undefined -fsanitize=address
-CFLAGS = -std=c23 -fwrapv -fno-strict-aliasing
+CFLAGS = -std=c23 -fwrapv -fno-strict-aliasing -masm=intel
 WARNINGS = \
 	-Wall -Wimplicit-fallthrough -Wmaybe-uninitialized \
 	-Wno-enum-compare -Wno-unused -Wno-enum-conversion -Wno-discarded-qualifiers

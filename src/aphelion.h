@@ -90,15 +90,12 @@ typedef enum : u8 {
 /// \note includes format info.
 typedef enum : u8 {
     OP_SSI = OP(010, 000, A),
+    OP_AUIR = OP(010, 001, A),
 
     OP_FENCE  = OP(100, 000, A),
     OP_CINVAL = OP(100, 001, A),
     OP_CFETCH = OP(100, 010, A),
     OP_TINVAL = OP(100, 100, A),
-    OP_JLR    = OP(100, 100, B),
-    OP_JL     = OP(100, 101, B),
-    OP_BZ     = OP(100, 110, A),
-    OP_BN     = OP(100, 111, A),
 
     OP_SYSCALL = OP(111, 000, A),
     OP_BREAKPT = OP(111, 001, A),
@@ -115,7 +112,7 @@ typedef enum : u8 {
     OP_IDIVI = OP(000, 101, B),
     OP_UREMI = OP(000, 110, B),
     OP_IREMI = OP(000, 111, B),
-
+    
     OP_ANDI = OP(001, 000, B),
     OP_ORI  = OP(001, 001, B),
     OP_NORI = OP(001, 010, B),
@@ -128,11 +125,25 @@ typedef enum : u8 {
     OP_MB  = OP(010, 001, B),
     OP_REV = OP(010, 010, B),
 
-    OP_SULTI = OP(011, 001, B),
-    OP_SILTI = OP(011, 010, B),
-    OP_SULEI = OP(011, 011, B),
-    OP_SILEI = OP(011, 100, B),
-    OP_SEQI  = OP(011, 101, B),
+    OP_SULTI = OP(011, 000, B),
+    OP_SILTI = OP(011, 001, B),
+    OP_SULEI = OP(011, 010, B),
+    OP_SILEI = OP(011, 011, B),
+    OP_SEQI  = OP(011, 100, B),
+
+    OP_LWI = OP(100, 000, B),
+    OP_LHI = OP(100, 001, B),
+    OP_LQI = OP(100, 010, B),
+    OP_LBI = OP(100, 011, B),
+    OP_SWI = OP(101, 000, B),
+    OP_SHI = OP(101, 001, B),
+    OP_SQI = OP(101, 010, B),
+    OP_SBI = OP(101, 011, B),
+
+    OP_JLR = OP(100, 100, B),
+    OP_JL  = OP(100, 101, B),
+    OP_BZ  = OP(100, 110, A),
+    OP_BN  = OP(100, 111, A),
 
     OP_ADD  = OP(000, 000, C),
     OP_SUB  = OP(000, 001, C),
@@ -142,26 +153,26 @@ typedef enum : u8 {
     OP_UREM = OP(000, 110, C),
     OP_IREM = OP(000, 111, C),
 
-    OP_AND   = OP(001, 000, C),
-    OP_OR    = OP(001, 001, C),
-    OP_NOR   = OP(001, 010, C),
-    OP_XOR   = OP(001, 011, C),
-    OP_EXT   = OP(001, 100, C),
-    OP_DEP   = OP(001, 101, C),
+    OP_AND = OP(001, 000, C),
+    OP_OR  = OP(001, 001, C),
+    OP_NOR = OP(001, 010, C),
+    OP_XOR = OP(001, 011, C),
+    OP_EXT = OP(001, 100, C),
+    OP_DEP = OP(001, 101, C),
     OP_UMULH = OP(001, 110, C),
     OP_IMULH = OP(001, 111, C),
-
-    OP_USR  = OP(010, 000, C),
-    OP_ISR  = OP(010, 001, C),
-    OP_ROR  = OP(010, 010, C),
-    OP_ROL  = OP(010, 011, C),
-    OP_SL   = OP(010, 100, C),
-
-    OP_SULT = OP(011, 001, C),
-    OP_SILT = OP(011, 010, C),
-    OP_SULE = OP(011, 011, C),
-    OP_SILE = OP(011, 100, C),
-    OP_SEQ  = OP(011, 101, C),
+    
+    OP_USR = OP(010, 000, C),
+    OP_ISR = OP(010, 001, C),
+    OP_ROR = OP(010, 010, C),
+    OP_ROL = OP(010, 011, C),
+    OP_SL  = OP(010, 100, C),
+    
+    OP_SULT = OP(011, 000, C),
+    OP_SILT = OP(011, 001, C),
+    OP_SULE = OP(011, 010, C),
+    OP_SILE = OP(011, 011, C),
+    OP_SEQ  = OP(011, 100, C),
 
     OP_LW  = OP(100, 000, C),
     OP_LH  = OP(100, 001, C),

@@ -12,14 +12,9 @@ typedef enum: u8 {
     ASM_OPERAND_IMM,
 
     // contrained kinds
-    ASM_OPERAND_MEM_8,
-    ASM_OPERAND_MEM_16,
-    ASM_OPERAND_MEM_32,
-    ASM_OPERAND_MEM_64,
-    ASM_OPERAND_MEM_SM_8,
-    ASM_OPERAND_MEM_SM_16,
-    ASM_OPERAND_MEM_SM_32,
-    ASM_OPERAND_MEM_SM_64,
+    ASM_OPERAND_MEM_U9,
+    ASM_OPERAND_MEM_U9_NO_R2,
+    ASM_OPERAND_MEM_U14,
     ASM_OPERAND_I9,
     ASM_OPERAND_U9,
     ASM_OPERAND_I14,
@@ -63,22 +58,30 @@ u32 encode_inst(string line);
 // (name, args, expr)
 // (expr) is evaluated as if it has access to the operands through o1, o2, o3, and o4
 #define INST_VARIANTS \
-    VARIANT( "lw"  , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_64                     }) , asm_encode_c(OP_LW , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 8) ) \
-    VARIANT( "lh"  , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_32                     }) , asm_encode_c(OP_LH , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 4) ) \
-    VARIANT( "lq"  , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_16                     }) , asm_encode_c(OP_LQ , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 2) ) \
-    VARIANT( "lb"  , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_8                      }) , asm_encode_c(OP_LB , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i    ) ) \
-    VARIANT( "llw" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_64                     }) , asm_encode_c(OP_LLW, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 8) ) \
-    VARIANT( "llh" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_32                     }) , asm_encode_c(OP_LLH, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 4) ) \
-    VARIANT( "llq" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_16                     }) , asm_encode_c(OP_LLQ, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i / 2) ) \
-    VARIANT( "llb" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_8                      }) , asm_encode_c(OP_LLB, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i    ) ) \
-    VARIANT( "sw"  , G({ ASM_OPERAND_MEM_64, ASM_OPERAND_GPR                        }) , asm_encode_c(OP_SW , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i / 8) ) \
-    VARIANT( "sh"  , G({ ASM_OPERAND_MEM_32, ASM_OPERAND_GPR                        }) , asm_encode_c(OP_SH , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i / 4) ) \
-    VARIANT( "sq"  , G({ ASM_OPERAND_MEM_16, ASM_OPERAND_GPR                        }) , asm_encode_c(OP_SQ , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i / 2) ) \
-    VARIANT( "sb"  , G({ ASM_OPERAND_MEM_8 , ASM_OPERAND_GPR                        }) , asm_encode_c(OP_SB , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i    ) ) \
-    VARIANT( "scw" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_SM_64, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCW, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i / 8) ) \
-    VARIANT( "sch" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_SM_32, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCH, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i / 4) ) \
-    VARIANT( "scq" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_SM_16, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCQ, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i / 2) ) \
-    VARIANT( "scb" , G({ ASM_OPERAND_GPR   , ASM_OPERAND_MEM_SM_8 , ASM_OPERAND_GPR }) , asm_encode_c(OP_SCB, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i    ) ) \
+    VARIANT( "lw"  , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LW , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "lh"  , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LH , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "lq"  , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LQ , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "lb"  , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LB , o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "lwi" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U14                       }) , asm_encode_b(OP_LWI, o1.gpr, o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "lhi" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U14                       }) , asm_encode_b(OP_LHI, o1.gpr, o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "lqi" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U14                       }) , asm_encode_b(OP_LQI, o1.gpr, o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "lbi" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U14                       }) , asm_encode_b(OP_LBI, o1.gpr, o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "llw" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LLW, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "llh" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LLH, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "llq" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LLQ, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "llb" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9                        }) , asm_encode_c(OP_LLB, o1.gpr, o2.mem.r1, o2.mem.r2, o2.mem.i) ) \
+    VARIANT( "sw"  , G({ ASM_OPERAND_MEM_U9 , ASM_OPERAND_GPR                           }) , asm_encode_c(OP_SW , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i) ) \
+    VARIANT( "sh"  , G({ ASM_OPERAND_MEM_U9 , ASM_OPERAND_GPR                           }) , asm_encode_c(OP_SH , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i) ) \
+    VARIANT( "sq"  , G({ ASM_OPERAND_MEM_U9 , ASM_OPERAND_GPR                           }) , asm_encode_c(OP_SQ , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i) ) \
+    VARIANT( "sb"  , G({ ASM_OPERAND_MEM_U9 , ASM_OPERAND_GPR                           }) , asm_encode_c(OP_SB , o2.gpr, o1.mem.r1, o1.mem.r2, o1.mem.i) ) \
+    VARIANT( "swi" , G({ ASM_OPERAND_MEM_U14, ASM_OPERAND_GPR                           }) , asm_encode_b(OP_SWI, o2.gpr, o1.mem.r1, o1.mem.i) ) \
+    VARIANT( "shi" , G({ ASM_OPERAND_MEM_U14, ASM_OPERAND_GPR                           }) , asm_encode_b(OP_SHI, o2.gpr, o1.mem.r1, o1.mem.i) ) \
+    VARIANT( "sqi" , G({ ASM_OPERAND_MEM_U14, ASM_OPERAND_GPR                           }) , asm_encode_b(OP_SQI, o2.gpr, o1.mem.r1, o1.mem.i) ) \
+    VARIANT( "sbi" , G({ ASM_OPERAND_MEM_U14, ASM_OPERAND_GPR                           }) , asm_encode_b(OP_SBI, o2.gpr, o1.mem.r1, o1.mem.i) ) \
+    VARIANT( "scw" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9_NO_R2, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCW, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "sch" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9_NO_R2, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCH, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "scq" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9_NO_R2, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCQ, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i) ) \
+    VARIANT( "scb" , G({ ASM_OPERAND_GPR    , ASM_OPERAND_MEM_U9_NO_R2, ASM_OPERAND_GPR }) , asm_encode_c(OP_SCB, o3.gpr, o1.gpr   , o2.mem.r1, o2.mem.i) ) \
     \
     VARIANT( "fence"          , G({                 }) , asm_encode_a(OP_FENCE , GPR_ZR,   0b11) ) \
     VARIANT( "fence.s"        , G({                 }) , asm_encode_a(OP_FENCE , GPR_ZR,   0b10) ) \
@@ -106,6 +109,8 @@ u32 encode_inst(string line);
     VARIANT( "ssi"   , G({ ASM_OPERAND_GPR, ASM_OPERAND_U16, ASM_OPERAND_SSI_SHIFT }) , asm_encode_a(OP_SSI, o1.gpr,     ((o3.imm / 16) << 1) | (o2.imm << 3)) ) \
     VARIANT( "ssi.c" , G({ ASM_OPERAND_GPR, ASM_OPERAND_U16, ASM_OPERAND_SSI_SHIFT }) , asm_encode_a(OP_SSI, o1.gpr, 1 | ((o3.imm / 16) << 1) | (o2.imm << 3)) ) \
     \
+    VARIANT( "auir"  , G({ ASM_OPERAND_GPR, ASM_OPERAND_I19 }) , asm_encode_a(OP_AUIR, o1.gpr, o2.imm) ) \
+    \
     VARIANT( "add"   , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_ADD  , o1.gpr, o2.gpr, o3.gpr, 0     ) ) \
     VARIANT( "add"   , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_U9 }) , asm_encode_c(OP_ADD  , o1.gpr, o2.gpr, o3.gpr, o4.imm) ) \
     VARIANT( "sub"   , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_SUB  , o1.gpr, o2.gpr, o3.gpr, 0     ) ) \
@@ -115,7 +120,7 @@ u32 encode_inst(string line);
     VARIANT( "umulh" , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_UMULH, o1.gpr, o2.gpr, o3.gpr, 0     ) ) \
     VARIANT( "umulh" , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_U9 }) , asm_encode_c(OP_UMULH, o1.gpr, o2.gpr, o3.gpr, o4.imm) ) \
     VARIANT( "imulh" , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_IMULH, o1.gpr, o2.gpr, o3.gpr, 0     ) ) \
-    VARIANT( "imulh" , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_U9 }) , asm_encode_c(OP_IMULH, o1.gpr, o2.gpr, o3.gpr, o4.imm) ) \
+    VARIANT( "imulh" , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_I9 }) , asm_encode_c(OP_IMULH, o1.gpr, o2.gpr, o3.gpr, o4.imm) ) \
     VARIANT( "udiv"  , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_UDIV , o1.gpr, o2.gpr, o3.gpr, 0     ) ) \
     VARIANT( "udiv"  , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_U9 }) , asm_encode_c(OP_UDIV , o1.gpr, o2.gpr, o3.gpr, o4.imm) ) \
     VARIANT( "idiv"  , G({ ASM_OPERAND_GPR, ASM_OPERAND_GPR, ASM_OPERAND_GPR                 }) , asm_encode_c(OP_IDIV , o1.gpr, o2.gpr, o3.gpr, 0     ) ) \

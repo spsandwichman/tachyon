@@ -268,41 +268,19 @@ static bool match_operand_template(AsmOperandKind template, AsmOperand op) {
     case ASM_OPERAND_CTRL:
         return op.kind == template;
 
-    case ASM_OPERAND_MEM_64:
+    case ASM_OPERAND_MEM_U9:
         return op.kind == ASM_OPERAND_MEM 
-            && 0 <= op.mem.i && op.mem.i <= 4088 
+            && 0 <= op.mem.i && op.mem.i <= 511;
+    case ASM_OPERAND_MEM_U14:
+        return op.kind == ASM_OPERAND_MEM 
+            && op.mem.r2 == GPR_ZR 
+            && 0 <= op.mem.i && op.mem.i <= 16383 
             && op.mem.i % 8 == 0;
-    case ASM_OPERAND_MEM_32:
+    case ASM_OPERAND_MEM_U9_NO_R2:
         return op.kind == ASM_OPERAND_MEM 
-            && 0 <= op.mem.i && op.mem.i <= 2044 
-            && op.mem.i % 4 == 0;
-    case ASM_OPERAND_MEM_16:
-        return op.kind == ASM_OPERAND_MEM 
-            && 0 <= op.mem.i && op.mem.i <= 1022 
-            && op.mem.i % 2 == 0;
-    case ASM_OPERAND_MEM_8:
-        return op.kind == ASM_OPERAND_MEM 
+            && op.mem.r2 == GPR_ZR
             && 0 <= op.mem.i && op.mem.i <= 511;
 
-    case ASM_OPERAND_MEM_SM_64:
-        return op.kind == ASM_OPERAND_MEM 
-            && op.mem.r2 == GPR_ZR 
-            && 0 <= op.mem.i && op.mem.i <= 4088 
-            && op.mem.i % 8 == 0;
-    case ASM_OPERAND_MEM_SM_32:
-        return op.kind == ASM_OPERAND_MEM 
-            && op.mem.r2 == GPR_ZR 
-            && 0 <= op.mem.i && op.mem.i <= 2044 
-            && op.mem.i % 4 == 0;
-    case ASM_OPERAND_MEM_SM_16:
-        return op.kind == ASM_OPERAND_MEM 
-            && op.mem.r2 == GPR_ZR 
-            && 0 <= op.mem.i && op.mem.i <= 1022 
-            && op.mem.i % 2 == 0;
-    case ASM_OPERAND_MEM_SM_8:
-        return op.kind == ASM_OPERAND_MEM 
-            && op.mem.r2 == GPR_ZR 
-            && 0 <= op.mem.i && op.mem.i <= 511;
     
     case ASM_OPERAND_I9:
         return op.kind == ASM_OPERAND_IMM

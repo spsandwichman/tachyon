@@ -5,8 +5,6 @@
 #include "system.h"
 #include "targets/x64.h"
 
-#include <setjmp.h>
-#include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -196,6 +194,9 @@ static bool compile_next_inst(Compiler* c) {
         UOpIndex r2 = get_sreg(c, einst.C.r2);
         UOpIndex r3 = get_sreg(c, einst.C.r3);
         UOpIndex op = uop_make2(c, UOP_ADD, r2, r3, 0);
+        if (einst.C.imm != 0) {
+            op = uop_make1(c, UOP_ADD_I32, op, einst.C.imm);
+        }
         set_sreg(c, einst.C.r1, op);
         break;
     }
@@ -203,6 +204,19 @@ static bool compile_next_inst(Compiler* c) {
         UOpIndex r2 = get_sreg(c, einst.C.r2);
         UOpIndex r3 = get_sreg(c, einst.C.r3);
         UOpIndex op = uop_make2(c, UOP_SUB, r2, r3, 0);
+        if (einst.C.imm != 0) {
+            op = uop_make1(c, UOP_SUB_I32, op, einst.C.imm);
+        }
+        set_sreg(c, einst.C.r1, op);
+        break;
+    }
+    case OP_MUL: {
+        UOpIndex r2 = get_sreg(c, einst.C.r2);
+        UOpIndex r3 = get_sreg(c, einst.C.r3);
+        if (einst.C.imm != 0) {
+            r3 = uop_make1(c, UOP_ADD_I32, r3, einst.C.imm);
+        }
+        UOpIndex op = uop_make2(c, UOP_MUL, r2, r3, 0);
         set_sreg(c, einst.C.r1, op);
         break;
     }
@@ -466,7 +480,6 @@ CompiledBlock* compiler_compile_block(Compiler* c, EncodedInst* binary, u64 padd
     memcpy(code, c->code, code_size);
     
     u64 phash = paddr_hash(paddr);
-
     CompiledBlock* block = &(*c->manager.blocks)[phash];
     if (block->code != nullptr) {
         // we gotta evict the block here. hopefully, this 

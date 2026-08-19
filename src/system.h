@@ -168,7 +168,6 @@ typedef struct TlbEntry {
     u64 phys_page_index : 50;
 } TlbEntry;
 
-
 /// Translation cache
 typedef struct LpTlb {
     TlbEntry entries[TLB_SIZE];
@@ -218,7 +217,7 @@ typedef struct LpInterruptState {
     A brief glossary:
 
     vaddr, virtual address  a virtual address on the emulated machine.
-    paddr, phys address     an address on the emulated machine.
+    paddr, phys address     a physical address on the emulated machine.
     haddr, host address     an address on the host machine.
 
     sreg, system register   a register on the emulated machine: a0, a1, etc.
@@ -278,9 +277,6 @@ typedef enum : u8 {
     /// Check for pending external interrupts.
     /// If pending, trigger that interrupt and diverge.
     UOP_CHECK_PENDING,
-    
-    /// Exit with an exit code. It does not end the block.
-    UOP_EXIT_MAY_RETURN,
 
     UOP_EXIT,
 } UOpKind;
@@ -312,17 +308,20 @@ typedef struct UOp {
 #define MUST_TAIL [[gnu::musttail]]
 #define SYSV_ABI [[gnu::sysv_abi]]
 #define NO_CALLER_SAVED [[gnu::no_caller_saved_registers]]
+#define GENERAL_REGS_ONLY [[gnu::target("general-regs-only")]]
 #define JIT_HELPER SYSV_ABI NO_CALLER_SAVED
 
 typedef struct JitHelperTable JitHelperTable;
 struct JitHelperTable {
-    void (*quit_with_code SYSV_ABI)      (Lp* lp, const JitHelperTable* table, BlockExitCode code);
+    void noreturn (*exit SYSV_ABI) (Lp* lp, const JitHelperTable* table, BlockExitCode code);
 
-    void (*translate_vaddr JIT_HELPER)   (Lp* lp, const JitHelperTable* table, u64 vaddr, AccessKind kind);
-    void (*verify_raw_access JIT_HELPER) (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width, AccessKind kind);
-    void (*raw_write JIT_HELPER)         (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width, u64 data);
-    u64  (*raw_read JIT_HELPER)          (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width);
+    u64  (*translate_vaddr   JIT_HELPER) (Lp* lp, const JitHelperTable* table, u64 vaddr, AccessKind kind);
+    void (*verify_access     JIT_HELPER) (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width, AccessKind kind);
+    void (*raw_write         JIT_HELPER) (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width, u64 data);
+    u64  (*raw_read          JIT_HELPER) (Lp* lp, const JitHelperTable* table, u64 paddr, AccessWidth width);
 };
+
+#define table_trigger_interrupt(lp, table, icause) table->exit(lp, table, EXIT_INTERRUPT_START + icause)
 
 typedef noreturn void(*JitEntrypoint SYSV_ABI)(Lp* lp, const JitHelperTable* table);
 
@@ -409,24 +408,12 @@ typedef struct Lp {
     LpTlb tlb;
 } Lp;
 
-
-u64  lp_translate_addr(Lp* lp, u64 va, AccessKind kind);
-void lp_check_physical_access(Lp* lp, u64 paddr, AccessWidth width, AccessKind kind);
-u8*  lp_physical_get_haddr(Lp* lp, u64 paddr);
-void lp_physical_write(Lp* lp, u64 paddr, AccessWidth width, void* data);
-u64  lp_physical_read(Lp* lp, u64 paddr, AccessWidth width);
-
-void lp_write(Lp* lp, u64 vaddr, AccessWidth width, void* data);
-u64  lp_read(Lp* lp, u64 vaddr, AccessWidth width);
-
 struct BusDevice {
     u64 range_start;
     u64 range_end;
 
     // A LP wants to read from a physical address.
     void (*respond_read_rq)(Lp* lp, u64 paddr, AccessWidth width, void* data);
-    // A LP wants to fetch an instruction from a physical address.
-    void (*respond_fetch_rq)(Lp* lp, u32* data);
     // A LP wants to write from a physical address.
     void (*respond_write_rq)(Lp* lp, u64 paddr, AccessWidth width, void* data);
 };
@@ -444,13 +431,12 @@ struct System {
     SystemMode mode;
 };
 
-System* system_init(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes);
+System* system_new(u16 num_lps, u16 num_ram_slots, usize* ram_slot_sizes);
 void system_dump(System* sys);
 void system_launch(System* sys);
 
-// Trigger an interrupt and longjmp back to the main execution loop.
-noreturn void lp_trigger_interrupt(Lp* lp, u8 cause);
 // Dump the lp's state to stdout.
-void lp_dump_info(Lp* lp);
+void lp_dump(Lp* lp);
+void lp_dispatch(Lp* lp);
 
 #endif // TACHYON_CORE_H
