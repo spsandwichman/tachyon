@@ -310,10 +310,10 @@ void x64_translate(Compiler* c) {
         vec_reserve(&c->code, len);
         memcpy(&c->code[vec_len(c->code)], buffer, len);
         vec_len(c->code) += len;
-        // DEBUG("");
-        // for_n(j, 0, len) {
-        //     DEBUG_NOI("%02x ", buffer[j]);
-        // }
-        // DEBUG_NOI("\n");
+        DEBUG("");
+        for_n(j, 0, len) {
+            DEBUG_NOI("%02x ", buffer[j]);
+        }
+        DEBUG_NOI("\n");
     }
 }
